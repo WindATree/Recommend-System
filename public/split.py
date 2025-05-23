@@ -55,6 +55,8 @@ def train_test_split():
     # 转换为DataFrame
     train_df = pd.DataFrame(train_records)
     valid_df = pd.DataFrame(valid_records) if valid_records else pd.DataFrame(columns=['user','item','score'])
+    train_df = train_df.astype({'user': int, 'item': int})
+    train_df = train_df.sort_values(by=['user', 'item'], ascending=[True, True], ignore_index=True)
     train_df.to_csv('Dataset/train_set.csv', index=False)
     valid_df.to_csv('Dataset/valid_set.csv', index=False)
     
