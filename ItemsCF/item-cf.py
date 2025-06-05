@@ -34,10 +34,10 @@ class ItemBasedCF:
         self.mean_item_rating = self.user_item_matrix.mean(axis=0)
 
         # # 中心化评分（按列中心化）
-        # ratings_diff = self.user_item_matrix.sub(self.mean_item_rating, axis=1)
+        ratings_diff = self.user_item_matrix.sub(self.mean_item_rating, axis=1)
 
-        # ratings_diff 是中心化过的评分（对每个 item）
-        ratings_diff = self.user_item_matrix.sub(self.user_item_matrix.mean(axis=1), axis=0)
+        # ratings_diff 是中心化过的评分（对每个 item）-> 皮尔逊相关系数
+        # ratings_diff = self.user_item_matrix.sub(self.user_item_matrix.mean(axis=1), axis=0)
 
         # 用0填充NaN用于相似度计算
         ratings_diff_filled = ratings_diff.fillna(0)
@@ -45,7 +45,7 @@ class ItemBasedCF:
         # 转置：物品为行，用户为列
         self.item_similarity = ratings_diff.T.corr(method='pearson')
         # 计算物品相似度矩阵（基于列）
-        self.item_similarity = cosine_similarity(ratings_diff_filled.T)
+        # self.item_similarity = cosine_similarity(ratings_diff_filled.T)
         self.item_similarity = pd.DataFrame(
             self.item_similarity,
             index=self.user_item_matrix.columns,
