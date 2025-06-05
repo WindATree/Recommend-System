@@ -17,7 +17,7 @@ class ItemBasedCF:
         self.train_data = None
         self.user_item_matrix = None
         self.mean_item_rating = None
-        self.globalmean = 0
+        self.global_mean = 0
         self.user_bias = None
         self.item_bias = None
     
@@ -39,8 +39,10 @@ class ItemBasedCF:
         # ratings_diff 是中心化过的评分（对每个 item）-> 皮尔逊相关系数
         # ratings_diff = self.user_item_matrix.sub(self.user_item_matrix.mean(axis=1), axis=0)
 
+        self.global_mean = self.train_data['score'].mean()
+
         # 用0填充NaN用于相似度计算
-        ratings_diff_filled = ratings_diff.fillna(0)
+        ratings_diff_filled = ratings_diff.fillna(self.global_mean)
 
         # 转置：物品为行，用户为列
         self.item_similarity = ratings_diff_filled.T.corr(method='pearson')
@@ -55,7 +57,7 @@ class ItemBasedCF:
 
 
         # 全局均值
-        self.global_mean = self.train_data['score'].mean()
+        # self.global_mean = self.train_data['score'].mean()
 
         # 用户偏置
         self.user_bias = self.user_item_matrix.sub(self.mean_item_rating, axis=1).mean(axis=1).fillna(0)
