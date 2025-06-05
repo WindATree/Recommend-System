@@ -43,7 +43,7 @@ class ItemBasedCF:
         ratings_diff_filled = ratings_diff.fillna(0)
 
         # 转置：物品为行，用户为列
-        self.item_similarity = ratings_diff.T.corr(method='pearson')
+        self.item_similarity = ratings_diff_filled.T.corr(method='pearson')
         # 计算物品相似度矩阵（基于列）
         # self.item_similarity = cosine_similarity(ratings_diff_filled.T)
         self.item_similarity = pd.DataFrame(
@@ -93,6 +93,9 @@ class ItemBasedCF:
         base_score = self.global_mean
         base_score += self.user_bias.get(user_id, 0)
         base_score += self.item_bias.get(item_id, 0)
+
+        # 不使用偏置
+        # base_score = self.mean_item_rating.get(item_id, self.global_mean)
 
         weighted_sum = (top_k_sim * top_k_ratings).sum()
         if top_k_sim.sum() != 0:
