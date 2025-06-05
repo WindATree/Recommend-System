@@ -17,6 +17,9 @@ class ItemBasedCF:
         self.train_data = None
         self.user_item_matrix = None
         self.mean_item_rating = None
+        self.globalmean = 0
+        self.user_bias = None
+        self.item_bias = None
     
     def fit(self, train_data):
         """使用训练集训练模型（仅对有评分的位置进行计算）"""
@@ -30,12 +33,17 @@ class ItemBasedCF:
         # 计算每个物品的平均评分（可用于冷启动）
         self.mean_item_rating = self.user_item_matrix.mean(axis=0)
 
-        # 中心化评分（按列中心化）
-        ratings_diff = self.user_item_matrix.sub(self.mean_item_rating, axis=1)
+        # # 中心化评分（按列中心化）
+        # ratings_diff = self.user_item_matrix.sub(self.mean_item_rating, axis=1)
+
+        # ratings_diff 是中心化过的评分（对每个 item）
+        ratings_diff = self.user_item_matrix.sub(self.user_item_matrix.mean(axis=1), axis=0)
 
         # 用0填充NaN用于相似度计算
         ratings_diff_filled = ratings_diff.fillna(0)
 
+        # 转置：物品为行，用户为列
+        self.item_similarity = ratings_diff.T.corr(method='pearson')
         # 计算物品相似度矩阵（基于列）
         self.item_similarity = cosine_similarity(ratings_diff_filled.T)
         self.item_similarity = pd.DataFrame(
@@ -43,6 +51,18 @@ class ItemBasedCF:
             index=self.user_item_matrix.columns,
             columns=self.user_item_matrix.columns
         )
+
+
+
+        # 全局均值
+        self.global_mean = self.train_data['score'].mean()
+
+        # 用户偏置
+        self.user_bias = self.user_item_matrix.sub(self.mean_item_rating, axis=1).mean(axis=1).fillna(0)
+
+        # 物品偏置
+        self.item_bias = self.mean_item_rating - self.global_mean
+
 
         print("\n模型训练完成")
         print(f"用户数量: {len(self.user_item_matrix.index)}")
@@ -69,11 +89,16 @@ class ItemBasedCF:
         top_k_sim = sim_scores[top_k_items]
         top_k_ratings = self.ratings_for_prediction.loc[user_id, top_k_items]
 
+        # 添加用户偏置和物品偏置
+        base_score = self.global_mean
+        base_score += self.user_bias.get(user_id, 0)
+        base_score += self.item_bias.get(item_id, 0)
+
         weighted_sum = (top_k_sim * top_k_ratings).sum()
         if top_k_sim.sum() != 0:
-            pred = self.mean_item_rating[item_id] + weighted_sum / top_k_sim.sum()
+            pred = base_score + weighted_sum / top_k_sim.sum()
         else:
-            pred = self.mean_item_rating[item_id]
+            pred = base_score
 
         # 限制在合理范围
         pred = max(10, min(100, pred))
