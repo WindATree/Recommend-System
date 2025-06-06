@@ -76,4 +76,4 @@ def train_test_split():
 if __name__ == '__main__':
     # train_test_split()
     # txt_to_csv('data/test.txt', 'Dataset/test_set.csv')
-    print(1)
+    csv_to_txt('Results/test_predictions.csv', 'Results/result.txt')

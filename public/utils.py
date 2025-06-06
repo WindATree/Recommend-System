@@ -60,7 +60,21 @@ def txt_to_csv(input_file, output_file):
                     writer.writerow([user_id, item_id])
                     items_read += 1
                     
-                    
+def csv_to_txt(input_csv, output_txt):
+    try:
+        with open(input_csv, 'r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            with open(output_txt, 'w', encoding='utf-8') as txtfile:
+                for row in reader:
+                    # 将CSV行转换为字符串，并写入TXT文件
+                    txtfile.write(','.join(row) + '\n')
+        print(f"文件已成功转换并保存到 {output_txt}")
+    except FileNotFoundError:
+        print(f"文件未找到: {input_csv}")
+    except Exception as e:
+        print(f"转换过程中发生错误: {e}")
+        
+               
 #获取当前进程使用内存信息
 def getProcessMemory():
     # 获取当前进程的内存信息
