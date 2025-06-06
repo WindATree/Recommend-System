@@ -91,6 +91,9 @@ class ItemBasedCF:
         top_k_sim = sim_scores[top_k_items]
         top_k_ratings = self.ratings_for_prediction.loc[user_id, top_k_items]
 
+        # 测试sim先求绝对值
+        top_k_sim_abs = top_k_sim.abs()
+
         # 添加用户偏置和物品偏置
         base_score = self.global_mean
         base_score += self.user_bias.get(user_id, 0)
