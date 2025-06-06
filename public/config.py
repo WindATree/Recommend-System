@@ -13,11 +13,12 @@ test_set = "./../Dataset/test_set.csv"
 RESULT_FOLDER = "./../Results/"
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-FACTORS = 20       # 隐因子数量
-EPOCHS = 50        # 训练轮数
-LR = 0.005         # 初始学习率
-DECAY_FACTOR = 0.9 # 学习率衰减因子
-LAMBDAUB = 0.02    # 用户偏置正则化系数
-LAMBDAIB = 0.02    # 物品偏置正则化系数
-LAMBDAP = 0.02     # P矩阵正则化系数
-LAMBDAQ = 0.02     # Q矩阵正则化系数
+FACTORS = 12        # 隐因子数量
+EPOCHS = 30        # 训练轮数
+LR = 0.0008          # 初始学习率
+DECAY_FACTOR = 0.95 # 学习率衰减因子
+LAMBDAUB = 0.25      # 用户偏置正则化系数
+LAMBDAIB = 0.25      # 物品偏置正则化系数
+LAMBDAP  = 0.2      # P矩阵正则化系数
+LAMBDAQ  = 0.2      # Q矩阵正则化系数
+

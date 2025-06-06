@@ -156,6 +156,7 @@ class SVDModel:
         # 添加隐因子点积
         prediction += sum(self.P[u][k] * self.Q[i][k] for k in range(self.factors))
         
+        
         # 确保评分在有效范围内
         return max(self.rating_scale[0], min(prediction, self.rating_scale[1]))
 
@@ -165,6 +166,8 @@ class SVDModel:
         start_time = time.time()
         best_val_rmse = float('inf')
         best_epoch = 0
+        no_improve_count = 0  # 连续未改进的轮数
+        patience = 10  # 连续5轮无改进则停止
         
         for epoch in range(self.epochs):
             epoch_start = time.time()
@@ -198,23 +201,30 @@ class SVDModel:
             train_rmse = math.sqrt(total_error / len(self.lil_matrix))
             
             # 验证集评估
-            val_rmse = self.evaluate(self.validation_set)
+            val_rmse, val_mae = self.evaluate(self.validation_set)
             
             # 保存最佳模型
             if val_rmse < best_val_rmse:
                 best_val_rmse = val_rmse
                 best_epoch = epoch
+                no_improve_count = 0
                 self.save_model()
                 print(f"保存最佳模型 (epoch {epoch+1}, RMSE={val_rmse:.4f})")
-            
-            # 学习率衰减
+            else:
+                no_improve_count += 1
+                if no_improve_count >= patience:
+                    print(f"早停触发! 连续{patience}轮无改进")
+                    break
+                
+        
             self.learning_rate *= DECAY_FACTOR
             
             # 打印epoch信息
             epoch_time = time.time() - epoch_start
+
             print(f"Epoch {epoch+1}/{self.epochs}: "
                   f"Train RMSE={train_rmse:.4f}, "
-                  f"Val RMSE={val_rmse:.4f}, "
+                  f"Val RMSE={val_rmse:.4f}, Val MAE={val_mae:.4f}, "
                   f"Time={epoch_time:.2f}s")
         
         total_time = time.time() - start_time
@@ -226,17 +236,22 @@ class SVDModel:
         if not dataset:
             return float('inf')
             
-        total_error = 0.0
+        total_squared_error = 0.0
+        total_abs_error = 0.0
         count = 0
         
         for u, i, r in dataset:
             pred = self.predict(u, i)
             error = r - pred
-            total_error += error ** 2
+            total_squared_error += error ** 2
+            total_abs_error += abs(error)
             count += 1
         
-        return math.sqrt(total_error / count) if count > 0 else float('inf')
-
+        rmse = math.sqrt(total_squared_error / count) if count > 0 else float('inf')
+        mae = total_abs_error / count if count > 0 else float('inf')
+        return rmse, mae
+   
+    
     def save_model(self):
         """保存模型到文件"""
         os.makedirs(RESULT_FOLDER, exist_ok=True)
