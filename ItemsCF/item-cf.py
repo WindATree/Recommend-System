@@ -45,7 +45,7 @@ class ItemBasedCF:
         ratings_diff_filled = ratings_diff.fillna(self.global_mean)
 
         # 转置：物品为行，用户为列
-        self.item_similarity = ratings_diff_filled.T.corr(method='pearson')
+        self.item_similarity = ratings_diff.T.corr(method='pearson')
         # 计算物品相似度矩阵（基于列）
         # self.item_similarity = cosine_similarity(ratings_diff_filled.T)
         self.item_similarity = pd.DataFrame(
