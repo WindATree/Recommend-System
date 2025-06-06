@@ -1,6 +1,6 @@
 import random
-from utils import *
-from config import *
+from public.utils import *
+from public.config import *
 import numpy as np
 import math
 import pandas as pd
@@ -74,4 +74,6 @@ def train_test_split():
         print("验证集为空，请检查split_size设置")
 
 if __name__ == '__main__':
-    train_test_split()
+    # train_test_split()
+    # txt_to_csv('data/test.txt', 'Dataset/test_set.csv')
+    print(1)
