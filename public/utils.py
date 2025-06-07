@@ -60,19 +60,31 @@ def txt_to_csv(input_file, output_file):
                     writer.writerow([user_id, item_id])
                     items_read += 1
                     
-def csv_to_txt(input_csv, output_txt):
-    try:
-        with open(input_csv, 'r', newline='', encoding='utf-8') as csvfile:
-            reader = csv.reader(csvfile)
-            with open(output_txt, 'w', encoding='utf-8') as txtfile:
-                for row in reader:
-                    # 将CSV行转换为字符串，并写入TXT文件
-                    txtfile.write(','.join(row) + '\n')
-        print(f"文件已成功转换并保存到 {output_txt}")
-    except FileNotFoundError:
-        print(f"文件未找到: {input_csv}")
-    except Exception as e:
-        print(f"转换过程中发生错误: {e}")
+def csv_to_txt(csv_file_path, txt_file_path):
+    # 创建一个字典来存储每个用户的评分项
+    user_ratings = {}
+
+    # 读取 CSV 文件
+    with open(csv_file_path, mode='r', newline='', encoding='utf-8') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            user_id = row['user_id']
+            item_id = row['item_id']
+            predicted_rating = row['predicted_rating']
+            
+            if user_id not in user_ratings:
+                user_ratings[user_id] = []
+            
+            user_ratings[user_id].append((item_id, predicted_rating))
+
+    # 写入 TXT 文件
+    with open(txt_file_path, mode='w', encoding='utf-8') as txt_file:
+        for user_id, ratings in user_ratings.items():
+            txt_file.write(f"{user_id}|{len(ratings)}\n")
+            for item_id, score in ratings:
+                txt_file.write(f"{item_id}   {score}\n")
+
+    print(f"转换完成，TXT 文件已保存到 {txt_file_path}")
         
                
 #获取当前进程使用内存信息
