@@ -26,5 +26,5 @@ if __name__ == "__main__":
     # itemcf
     icf = ItemBasedCF()
     icf.fit(train_data, similarity_method='pearson')
-    icf.test(test_data, output_file="Results/itemcf_predictions.csv", save = True,  k=25, abs = True)
+    icf.test(test_data, output_file="Results/itemcf_predictions.csv", save = True,  k=27, abs = True)
     csv_to_txt('Results/itemcf_predictions.csv', 'Results/itemcf_result.txt')
