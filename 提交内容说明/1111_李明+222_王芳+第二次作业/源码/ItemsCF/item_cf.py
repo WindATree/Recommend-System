@@ -160,6 +160,40 @@ class ItemBasedCF:
             print(f"{k}: {v:.4f}")
 
         return metrics
+    
+    def test(self, test_set, output_file="itemcf_test_predictions.csv", save=False, k=5, abs=False):
+        """
+        对测试集数据进行评分预测
+        
+        参数:
+            test_set (DataFrame): 测试数据集
+            output_file (str): 输出文件路径
+            save (bool): 是否保存到文件
+            k (int): 近邻数量
+            abs (bool): 是否对相似度取绝对值
+        
+        返回:
+            DataFrame: 包含预测结果的数据框
+        """
+        # 复制测试数据
+        test_df = test_set.copy()
+        
+        # 为每条记录生成预测评分
+        test_df['predicted_rating'] = test_df.apply(
+            lambda row: self.predict(row['user'], row['item'], k, abs), 
+            axis=1
+        )
+        
+        # 重命名列以符合提交格式要求
+        test_df.rename(columns={'user': 'user_id', 'item': 'item_id'}, inplace=True)
+        
+        # 选择性保存到CSV
+        if save:
+            output_path = output_file
+            test_df.to_csv(output_path, index=False)
+            print(f"测试集预测结果已保存到: {output_path}")
+        
+        return test_df
 
 def compare_similarity_and_k_values(train_data, valid_data):
     """比较不同相似度计算方法和不同K值对推荐质量的影响"""
