@@ -231,6 +231,24 @@ class UserBasedCF:
             print(f"{k}: {v:.4f}")
             
         return metrics
+    
+    def test(self, test_set, output_file="test_predictions.csv",save = False, k=5, predict_func = "normal"):
+        test_df = test_set.copy()
+        
+        # 为每条记录生成预测值
+        test_df['predicted_rating'] = test_df.apply(
+            lambda row: self.predict_func[predict_func](row['user'], row['item'],k), 
+            axis=1
+        )
+        
+        test_df.rename(columns={'user': 'user_id', 'item': 'item_id'}, inplace=True)
+
+        # 保存到CSV
+        if save:
+            output_path = output_file
+            test_df.to_csv(output_path, index=False)
+            
+        return test_df
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
