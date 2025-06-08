@@ -14,17 +14,18 @@ if __name__ == "__main__":
 
     train_data = pd.read_csv('Dataset/train_set.csv')
     valid_data = pd.read_csv('Dataset/valid_set.csv')
+    all_train_data = pd.concat([train_data, valid_data], axis=0)
     test_data = pd.read_csv('Dataset/test_set.csv')
 
     # usercf
 
     ucf = UserBasedCF()
-    ucf.fit_cosine(train_data)
+    ucf.fit_cosine(all_train_data)
     ucf.test(test_data, k=30,output_file="Results/usercf_predictions.csv", save = True, predict_func = "v2") 
     csv_to_txt('Results/usercf_predictions.csv', 'Results/usercf_result.txt')
 
     # itemcf
     icf = ItemBasedCF()
-    icf.fit(train_data, similarity_method='pearson')
+    icf.fit(all_train_data, similarity_method='pearson')
     icf.test(test_data, output_file="Results/itemcf_predictions.csv", save = True,  k=27, abs = True)
     csv_to_txt('Results/itemcf_predictions.csv', 'Results/itemcf_result.txt')
