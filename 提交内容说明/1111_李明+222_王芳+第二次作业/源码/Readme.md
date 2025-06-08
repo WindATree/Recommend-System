@@ -1,0 +1,1 @@
+请保证在根目录下存在data文件夹，其中包括train.txt和test.txt
