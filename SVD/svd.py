@@ -167,7 +167,7 @@ class SVDModel:
         best_val_rmse = float('inf')
         best_epoch = 0
         no_improve_count = 0  # 连续未改进的轮数
-        patience = 10  # 连续5轮无改进则停止
+        patience = 5  # 连续5轮无改进则停止
         
         for epoch in range(self.epochs):
             epoch_start = time.time()
