@@ -231,6 +231,57 @@ class SVDModel:
         print(f"训练完成! 总用时: {total_time:.2f}秒")
         print(f"最佳验证RMSE: {best_val_rmse:.4f} (在epoch {best_epoch+1})")
 
+        print("\n===== 使用整个训练集（包括验证集）重新训练 =====")
+        self.load_model()
+        print("已加载最佳模型参数")
+        
+        # 2. 将验证集合并到训练集中
+        full_train_set = self.lil_matrix + self.validation_set
+        print(f"合并后训练集大小: {len(full_train_set)} (原训练集: {len(self.lil_matrix)}, 验证集: {len(self.validation_set)})")
+        self.lil_matrix = full_train_set
+        
+        # 3. 设置较小的学习率和较少的训练轮次进行微调
+        original_lr = self.learning_rate
+        self.learning_rate = original_lr * 0.1  # 使用更小的学习率
+        additional_epochs = 5  # 微调轮次
+        
+        print(f"重新训练参数: 学习率={self.learning_rate}, 轮次={additional_epochs}")
+        
+        # 4. 进行微调训练
+        for epoch in range(additional_epochs):
+            epoch_start = time.time()
+            total_error = 0.0
+            random.shuffle(self.lil_matrix)
+            
+            for u, i, r in self.lil_matrix:
+                pred = self.predict(u, i)
+                error = r - pred
+                total_error += error ** 2
+                
+                # 更新参数
+                self.user_bias[u] += self.learning_rate * (error - self.LambdaUB * self.user_bias[u])
+                self.item_bias[i] += self.learning_rate * (error - self.LambdaIB * self.item_bias[i])
+                
+                for k in range(self.factors):
+                    p_uk = self.P[u][k]
+                    q_ik = self.Q[i][k]
+                    self.P[u][k] += self.learning_rate * (error * q_ik - self.LambdaP * p_uk)
+                    self.Q[i][k] += self.learning_rate * (error * p_uk - self.LambdaQ * q_ik)
+            
+            # 计算训练误差
+            train_rmse = math.sqrt(total_error / len(self.lil_matrix))
+            epoch_time = time.time() - epoch_start
+            
+            # 学习率衰减
+            self.learning_rate *= DECAY_FACTOR
+            
+            print(f"微调 Epoch {epoch+1}/{additional_epochs}: "
+                  f"Train RMSE={train_rmse:.4f}, "
+                  f"Time={epoch_time:.2f}s, LR={self.learning_rate:.6f}")
+        
+        # 5. 保存最终模型
+        self.save_model()
+        print("重新训练完成，最终模型已保存")
     def evaluate(self, dataset):
         """评估模型在指定数据集上的表现"""
         if not dataset:
