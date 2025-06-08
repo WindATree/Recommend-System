@@ -11,9 +11,7 @@ import tracemalloc
 import json
 
 # 路径设置
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
+
 
 from public.config import *
 from public.utils import getProcessMemory 
@@ -54,14 +52,15 @@ class SVDModel:
 
     def load_dictionaries(self):
         """加载用户和物品的映射字典"""
+        
         # 创建用户ID到索引的映射
-        user_data, _ = file_read('./../data/train.txt')
+        user_data, _ = file_read('data/train.txt')  # 修改这里
         self.user_dict = {str(user_id): idx for idx, user_id in enumerate(user_data.keys())}
         # print(f"用户字典: {self.user_dict}")
         self.user_num = len(self.user_dict)
         
         # 创建物品ID到索引的映射
-        _, item_data = file_read('./../data/train.txt')
+        _, item_data = file_read('data/train.txt')
         self.item_dict = {str(item_id): idx for idx, item_id in enumerate(item_data.keys())}
         self.item_num = len(self.item_dict)
         
@@ -87,14 +86,14 @@ class SVDModel:
         self.user_bias = [0.0 for _ in range(self.user_num)]
         self.item_bias = [0.0 for _ in range(self.item_num)]
 
-    def load_train_set(self):
+    def load_train_set(self, train_file):
         """加载训练集"""
         self.lil_matrix = []
         total_rating = 0.0
         count = 0
         
         # 使用CSV格式训练集
-        with open(training_set, 'r') as f:
+        with open(train_file, 'r') as f:
             reader = csv.reader(f)
             header = next(reader)  # 跳过标题行并打印标题行
             print(f"训练数据文件标题行: {header}")
@@ -123,12 +122,12 @@ class SVDModel:
         
         print(f"加载 {len(self.lil_matrix)} 条训练数据，平均评分: {self.global_mean:.2f}")
 
-    def load_validation_set(self):
+    def load_validation_set(self, valid_file):
         """加载验证集"""
         self.validation_set = []
         
         # 使用验证集
-        with open(valid_set, 'r') as f:
+        with open(valid_file, 'r') as f:
             reader = csv.reader(f)
             next(reader)  # 跳过标题行
             for row in reader:
@@ -167,7 +166,7 @@ class SVDModel:
         best_val_rmse = float('inf')
         best_epoch = 0
         no_improve_count = 0  # 连续未改进的轮数
-        patience = 10  # 连续5轮无改进则停止
+        patience = 5  # 连续5轮无改进则停止
         
         for epoch in range(self.epochs):
             epoch_start = time.time()
@@ -231,6 +230,57 @@ class SVDModel:
         print(f"训练完成! 总用时: {total_time:.2f}秒")
         print(f"最佳验证RMSE: {best_val_rmse:.4f} (在epoch {best_epoch+1})")
 
+        print("\n===== 使用整个训练集（包括验证集）重新训练 =====")
+        self.load_model()
+        print("已加载最佳模型参数")
+        
+        # 2. 将验证集合并到训练集中
+        full_train_set = self.lil_matrix + self.validation_set
+        print(f"合并后训练集大小: {len(full_train_set)} (原训练集: {len(self.lil_matrix)}, 验证集: {len(self.validation_set)})")
+        self.lil_matrix = full_train_set
+        
+        # 3. 设置较小的学习率和较少的训练轮次进行微调
+        original_lr = self.learning_rate
+        self.learning_rate = original_lr * 0.1  # 使用更小的学习率
+        additional_epochs = 5  # 微调轮次
+        
+        print(f"重新训练参数: 学习率={self.learning_rate}, 轮次={additional_epochs}")
+        
+        # 4. 进行微调训练
+        for epoch in range(additional_epochs):
+            epoch_start = time.time()
+            total_error = 0.0
+            random.shuffle(self.lil_matrix)
+            
+            for u, i, r in self.lil_matrix:
+                pred = self.predict(u, i)
+                error = r - pred
+                total_error += error ** 2
+                
+                # 更新参数
+                self.user_bias[u] += self.learning_rate * (error - self.LambdaUB * self.user_bias[u])
+                self.item_bias[i] += self.learning_rate * (error - self.LambdaIB * self.item_bias[i])
+                
+                for k in range(self.factors):
+                    p_uk = self.P[u][k]
+                    q_ik = self.Q[i][k]
+                    self.P[u][k] += self.learning_rate * (error * q_ik - self.LambdaP * p_uk)
+                    self.Q[i][k] += self.learning_rate * (error * p_uk - self.LambdaQ * q_ik)
+            
+            # 计算训练误差
+            train_rmse = math.sqrt(total_error / len(self.lil_matrix))
+            epoch_time = time.time() - epoch_start
+            
+            # 学习率衰减
+            self.learning_rate *= DECAY_FACTOR
+            
+            print(f"微调 Epoch {epoch+1}/{additional_epochs}: "
+                  f"Train RMSE={train_rmse:.4f}, "
+                  f"Time={epoch_time:.2f}s, LR={self.learning_rate:.6f}")
+        
+        # 5. 保存最终模型
+        self.save_model()
+        print("重新训练完成，最终模型已保存")
     def evaluate(self, dataset):
         """评估模型在指定数据集上的表现"""
         if not dataset:
@@ -296,13 +346,13 @@ class SVDModel:
         
         print("模型加载完成")
 
-    def predict_test_set(self, output_file):
+    def predict_test_set(self, test_file, output_file):
         """预测测试集并保存结果"""
         print("预测测试集...")
         test_data = []
         
         # 读取测试集
-        with open(test_set, 'r') as f:
+        with open(test_file, 'r') as f:
             reader = csv.reader(f)
             next(reader)  # 跳过标题行
             for row in reader:

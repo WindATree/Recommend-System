@@ -15,7 +15,7 @@ RESULT_FOLDER = "./../Results/"
 
 FACTORS = 12        # 隐因子数量
 EPOCHS = 20        # 训练轮数
-LR = 0.002          # 初始学习率
+LR = 0.0008          # 初始学习率
 DECAY_FACTOR = 0.95 # 学习率衰减因子
 LAMBDAUB = 0.25      # 用户偏置正则化系数
 LAMBDAIB = 0.25      # 物品偏置正则化系数
